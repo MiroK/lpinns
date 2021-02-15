@@ -1,10 +1,10 @@
 # Based on Lagrangian
 #
-#   inner(grad(u), grad(u))*dx + inner(u, p)*ds1
+#   inner(grad(u), grad(u))*dx + inner(u, p)*ds
 #
 
 
-from lpinns.mms import poisson
+from lpinns.mms import poisson_1d as poisson
 from lpinns.fenics_legendre import LegendreBasis, legendre
 
 import matplotlib.pyplot as plt
@@ -12,9 +12,10 @@ from dolfin import *
 import numpy as np
 
 
-mesh = UnitSquareMesh(64, 64)
-facet_subdomains = MeshFunction('size_t', mesh, 1, 0)
-CompiledSubDomain('near(x[1], 1)').mark(facet_subdomains, 1)
+mesh = UnitIntervalMesh(64)
+facet_subdomains = MeshFunction('size_t', mesh, 0, 0)
+CompiledSubDomain('near(x[0], 0)').mark(facet_subdomains, 1)
+CompiledSubDomain('near(x[0], 1)').mark(facet_subdomains, 2)
 
 ds = Measure('ds', domain=mesh, subdomain_data=facet_subdomains)
 
@@ -24,17 +25,15 @@ data = poisson(alpha_value)
 
 f_data, g_data, u_true = (data[key] for key in ('f', 'g_dirichlet', 'u_true'))
 
-errors, conds, degrees = [], [], (3, 4, 5, 6, 7)
+errors, conds, degrees = [], [], (3, 4, 5, 6, 7, 8, 9, 10)
 for degree in degrees:
-    alpha = Constant(alpha_value)
     # Bulk
     basis_V = LegendreBasis(mesh=mesh, degree=degree)
-    # Multiplier on {y = 1} so we only vary in x
-    x = SpatialCoordinate(mesh)[0]
-    basis_Q = [legendre(deg, x) for deg in range(degree-1)]
+    # Multiplier are two number!
+    basis_Q = [Constant(1), Constant(1)]
 
-    V_elm = VectorElement('Real', triangle, 0, len(basis_V))
-    Q_elm = VectorElement('Real', triangle, 0, len(basis_Q))
+    V_elm = VectorElement('Real', mesh.ufl_cell(), 0, len(basis_V))
+    Q_elm = VectorElement('Real', mesh.ufl_cell(), 0, len(basis_Q))
     W_elm = MixedElement([V_elm, Q_elm])
     # These are just coefficients to be computed what weight the
     # linear combinations of basis functions
@@ -45,12 +44,12 @@ for degree in degrees:
     u = sum(u[i]*fi for i, fi in enumerate(basis_V))
     v = sum(v[i]*fi for i, fi in enumerate(basis_V))
     # Combine with basis functions
-    p = sum(p[i]*fi for i, fi in enumerate(basis_Q))
-    q = sum(q[i]*fi for i, fi in enumerate(basis_Q))
-                            
-    a = (inner(grad(u), grad(v))*dx + inner(p, v)*ds(1) +
-         inner(q, u)*ds(1))
-    L = inner(f_data, v)*dx + inner(g_data, q)*ds(1)
+    p0, p1 = split(p)
+    q0, q1 = split(q)
+    
+    a = (inner(grad(u), grad(v))*dx + inner(p0, v)*ds(1) + inner(p1, v)*ds(2) + 
+         inner(q0, u)*ds(1) + inner(q1, u)*ds(2))
+    L = inner(f_data, v)*dx + inner(g_data, q0)*ds(1) + + inner(g_data, q1)*ds(2)
 
     wh = Function(W)
     A, b = map(assemble, (a, L))

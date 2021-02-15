@@ -31,3 +31,33 @@ def poisson(alpha_value=1):
             'g_dirichlet': as_expr(u_sp),
             'f': as_expr(f_sp),
             'mean': mean}
+
+# Let's have 1d - maybe the condition number is smaller
+def poisson_1d(alpha_value=1):
+    '''
+    We will conder Poisson on [0, 1]. Bcs speced on left/right
+    '''
+    x, alpha = sp.symbols('x[0] alpha')
+    # True also dirichlet data
+    u_sp = sp.cos(pi*x) - x**2
+    mean = sp.integrate(u_sp, (x, 0, 1))
+
+    u_sp = u_sp - mean
+    # Neumann data (left, right)
+    g_neumann = (u_sp.diff(x, 1), -u_sp.diff(x, 1)) 
+    # For robin -du/dn = alpha*u + g
+    g_robin = (u_sp.diff(x, 1) - alpha*u_sp,
+               -u_sp.diff(x, 1)- alpha*u_sp)
+    # Source term
+    f_sp = -u_sp.diff(x, 2)
+
+    as_expr = lambda f, alpha=alpha_value: df.Expression(sp.printing.ccode(f),
+                                                         degree=4,
+                                                         alpha=alpha)
+    # Wrap as expression for FEniCS
+    return {'u_true': as_expr(u_sp),
+            'g_neumann': tuple(map(as_expr, g_neumann)),
+            'g_robin': tuple(map(as_expr, g_robin)),
+            'g_dirichlet': as_expr(u_sp),
+            'f': as_expr(f_sp),
+            'mean': mean}
