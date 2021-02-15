@@ -12,9 +12,9 @@ from dolfin import *
 import numpy as np
 
 
-mesh = UnitIntervalMesh(64)
+mesh = IntervalMesh(64, -1, 1)
 facet_subdomains = MeshFunction('size_t', mesh, 0, 0)
-CompiledSubDomain('near(x[0], 0)').mark(facet_subdomains, 1)
+CompiledSubDomain('near(x[0], -1)').mark(facet_subdomains, 1)
 CompiledSubDomain('near(x[0], 1)').mark(facet_subdomains, 2)
 
 ds = Measure('ds', domain=mesh, subdomain_data=facet_subdomains)

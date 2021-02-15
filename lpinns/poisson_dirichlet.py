@@ -12,7 +12,7 @@ from dolfin import *
 import numpy as np
 
 
-mesh = UnitSquareMesh(64, 64)
+mesh = RectangleMesh(Point(-1, -1), Point(1, 1), 64, 64)
 facet_subdomains = MeshFunction('size_t', mesh, 1, 0)
 CompiledSubDomain('near(x[1], 1)').mark(facet_subdomains, 1)
 
@@ -24,14 +24,13 @@ data = poisson(alpha_value)
 
 f_data, g_data, u_true = (data[key] for key in ('f', 'g_dirichlet', 'u_true'))
 
-errors, conds, degrees = [], [], (3, 4, 5, 6, 7)
+errors, conds, degrees = [], [], (3, 4, 5, 6, 7, 8)
 for degree in degrees:
-    alpha = Constant(alpha_value)
     # Bulk
     basis_V = LegendreBasis(mesh=mesh, degree=degree)
     # Multiplier on {y = 1} so we only vary in x
     x = SpatialCoordinate(mesh)[0]
-    basis_Q = [legendre(deg, x) for deg in range(degree-1)]
+    basis_Q = [legendre(deg, x) for deg in range(degree)]
 
     V_elm = VectorElement('Real', triangle, 0, len(basis_V))
     Q_elm = VectorElement('Real', triangle, 0, len(basis_Q))

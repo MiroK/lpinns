@@ -12,20 +12,22 @@ from dolfin import *
 import numpy as np
 
 
-mesh = UnitIntervalMesh(64)
+mesh = IntervalMesh(64, -1, 1)
 facet_subdomains = MeshFunction('size_t', mesh, 0, 0)
-CompiledSubDomain('near(x[0], 0)').mark(facet_subdomains, 1)
+CompiledSubDomain('near(x[0], -1)').mark(facet_subdomains, 1)
 CompiledSubDomain('near(x[0], 1)').mark(facet_subdomains, 2)
 
 ds = Measure('ds', domain=mesh, subdomain_data=facet_subdomains)
 
 # MMS data
 alpha_value = 1
-data = poisson(alpha_value)
+data = poisson(alpha_value, zero_mean=True)#=False)
+# NOTE: zero_mean == True -> converges fine
+#       zero_mean == False -> no way
 
 f_data, g_data, u_true = (data[key] for key in ('f', 'g_dirichlet', 'u_true'))
 
-errors, conds, degrees = [], [], (3, 4, 5, 6, 7, 8, 9, 10)
+errors, conds, degrees = [], [], list(range(3, 12))
 for degree in degrees:
     # Bulk
     basis_V = LegendreBasis(mesh=mesh, degree=degree, min_degree=2)

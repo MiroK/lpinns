@@ -5,15 +5,15 @@ from dolfin import pi
 
 def poisson(alpha_value=1):
     '''
-    We will conder Poisson on [0, 1]^2 with bcs grad(u).n = 0 everywhere
+    We will conder Poisson on [-1, 1]^2 with bcs grad(u).n = 0 everywhere
     but on the top, where we will vary boundary conditions.
     '''
     x, y, alpha = sp.symbols('x[0] x[1] alpha')
     # True also dirichlet data
-    u_sp = sp.cos(pi*x)*sp.cos(pi*y) + 1 - y**2*x**2*(1-x)**2
-    mean = sp.integrate(sp.integrate(1 - y**2*x**2*(1-x)**2, (x, 0, 1)), (y, 0, 1))
+    u_sp = sp.cos(pi*x)*sp.cos(pi*y) + 1 - (y+1)**2*(x+1)**2*(1-x)**2
+    mean = sp.integrate(sp.integrate(u_sp, (x, -1, 1)), (y, -1, 1))
 
-    u_sp = u_sp - mean
+    u_sp = u_sp - mean/4
     # Neumann data on top edge we give -grad(u).n there
     g_neumann = -u_sp.diff(y, 1)
     # For robin -du/dn = alpha*u + g
@@ -33,16 +33,17 @@ def poisson(alpha_value=1):
             'mean': mean}
 
 # Let's have 1d - maybe the condition number is smaller
-def poisson_1d(alpha_value=1):
+def poisson_1d(alpha_value=1, zero_mean=True):
     '''
-    We will conder Poisson on [0, 1]. Bcs speced on left/right
+    We will conder Poisson on [-1, 1]. Bcs speced on left/right
     '''
     x, alpha = sp.symbols('x[0] alpha')
     # True also dirichlet data
     u_sp = sp.cos(pi*x) - x**2
-    mean = sp.integrate(u_sp, (x, 0, 1))
+    mean = sp.integrate(u_sp, (x, -1, 1))
 
-    u_sp = u_sp - mean
+    if zero_mean:
+        u_sp = u_sp - mean/2
     # Neumann data (left, right)
     g_neumann = (u_sp.diff(x, 1), -u_sp.diff(x, 1)) 
     # For robin -du/dn = alpha*u + g

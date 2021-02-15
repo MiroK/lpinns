@@ -12,9 +12,9 @@ from dolfin import *
 import numpy as np
 
 
-mesh = UnitIntervalMesh(64)
+mesh = IntervalMesh(64, -1, 1)
 facet_subdomains = MeshFunction('size_t', mesh, 0, 0)
-CompiledSubDomain('near(x[0], 0)').mark(facet_subdomains, 1)
+CompiledSubDomain('near(x[0], -1)').mark(facet_subdomains, 1)
 CompiledSubDomain('near(x[0], 1)').mark(facet_subdomains, 2)
 
 ds = Measure('ds', domain=mesh, subdomain_data=facet_subdomains)
@@ -25,7 +25,7 @@ data = poisson(alpha_value)
 
 f_data, g_data, u_true = (data[key] for key in ('f', 'g_robin', 'u_true'))
 
-errors, conds, degrees = [], [], (3, 4, 5, 6, 7)
+errors, conds, degrees = [], [], list(range(3, 12))
 for degree in degrees:
     alpha = Constant(alpha_value)
     basis = LegendreBasis(mesh=mesh, degree=degree)
