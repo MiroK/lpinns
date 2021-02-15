@@ -1,6 +1,6 @@
-# Based on Lagrangian
+# Based on residual formulation
 #
-#   
+#   |-div(grad(u)) - f|^2*ds + |u - g|^2*dx
 #
 
 
@@ -36,7 +36,9 @@ for degree in degrees:
     # Combine with basis functions
     u = sum(u[i]*fi for i, fi in enumerate(basis_V))
     v = sum(v[i]*fi for i, fi in enumerate(basis_V))
-    
+    #
+    # Energy gorm derif foo(u)^2 -> foo(u)*[d foo / d u][v]
+    #
     F = inner(-div(grad(u))-f_data, -div(grad(v)))*dx + inner(u - g_data, v)*ds
     a, L = lhs(F), rhs(F)
     
