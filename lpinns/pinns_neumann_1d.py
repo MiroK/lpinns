@@ -1,6 +1,6 @@
 # Based on residual formulation
 #
-#   |-div(grad(u)) - f|^2*ds + |u - g|^2*dx
+#   |-div(grad(u)) - f|^2*ds + |-du/dn - g|^2*dx
 #
 
 
@@ -21,14 +21,12 @@ ds = Measure('ds', domain=mesh, subdomain_data=facet_subdomains)
 
 # MMS data
 alpha_value = 1
-zero_mean = False
-data = poisson(alpha_value, zero_mean=zero_mean)#=False)
-# NOTE: zero_mean == True -> converges fine
-#       zero_mean == False -> no way
+data = poisson(alpha_value)
+# NOTE: No cvrg
 
-f_data, g_data, u_true = (data[key] for key in ('f', 'g_dirichlet', 'u_true'))
+f_data, g_data, u_true = (data[key] for key in ('f', 'g_neumann', 'u_true'))
 
-errors, conds, degrees = [], [], list(range(3, 12))
+errors, conds, degrees = [], [], (3, 4, 5, 6, 7, 8, 9, 10)
 for degree in degrees:
     # Bulk
     basis_V = LegendreBasis(mesh=mesh, degree=degree, min_degree=2)
@@ -42,7 +40,13 @@ for degree in degrees:
     #
     # Energy gorm derif foo(u)^2 -> foo(u)*[d foo / d u][v]
     #
-    F = inner(-div(grad(u))-f_data, -div(grad(v)))*dx + inner(u - g_data, v)*ds
+    n = FacetNormal(mesh)
+    F = (inner(-div(grad(u))-f_data, -div(grad(v)))*dx +
+         inner(-dot(grad(u), n) + g_data[0], -dot(grad(v), n))*ds(1) +
+         inner(-dot(grad(u), n) + g_data[1], -dot(grad(v), n))*ds(2))
+#         inner(-dot(grad(u), n) + g_data[0], v)*ds(1) +
+#         inner(-dot(grad(u), n) + g_data[1], v)*ds(2))
+         
     a, L = lhs(F), rhs(F)
     
     uh = Function(V)
@@ -60,7 +64,7 @@ for degree in degrees:
     conds.append(cond)
     print(degree, error)
 
-fig, ax = plt.subplots(figsize=(16, 10))
+fig, ax = plt.subplots()
 
 ax.semilogy(degrees, errors, 'bx-')
 ax.set_ylabel('|u-uh|_0', color='blue')
@@ -69,8 +73,9 @@ ax.set_xlabel('degree')
 ax = ax.twinx()
 ax.semilogy(degrees, conds, 'ro-')
 ax.set_ylabel('condition number', color='red')
-fig.savefig('pinns_D_zeroMean%d_cvrg.pdf' % zero_mean)
-# Solution
+
+# FIXME: plot solution
+#        where is the error
 
 V = FunctionSpace(mesh, 'CG', 1)
 x = V.tabulate_dof_coordinates().reshape((-1, ))
@@ -79,11 +84,9 @@ idx = np.argsort(x)
 uh = project(uh, V).vector().get_local()[idx]
 u_true = interpolate(u_true, V).vector().get_local()[idx]
 
-fig, ax = plt.subplots(figsize=(16, 10))
-ax.plot(x, uh, label='uh')
-ax.plot(x, u_true, label='u')
-ax.plot(x, uh - u_true, label='uh - u')
+plt.figure()
+plt.plot(x, uh, label='uh')
+plt.plot(x, u_true, label='u')
+plt.plot(x, uh - u_true, label='uh - u')
 plt.legend()
-
-fig.savefig('pinns_D_zeroMean%d_error.pdf' % zero_mean)
 plt.show()
