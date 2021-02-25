@@ -124,9 +124,8 @@ def closure(history=epoch_loss):
     # Volume part
     loss = (
         0.5*(dot(grad_u, grad_u)*volume_q).sum()+
-        0.5*(u(area_x)**2*area_q).sum()+
-        (-f_data(volume_x)*u(volume_x)*volume_q).sum()+
-        (g_data(area_x)*u(area_x)*area_q).sum()
+        0.5*(u(area_x)*(u(area_x) + 2*g_data(area_x))*area_q).sum()+
+        (-f_data(volume_x)*u(volume_x)*volume_q).sum()
     )
     
     print(f'Loss @ {len(history)} = {float(loss)}')

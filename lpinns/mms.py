@@ -14,6 +14,8 @@ def poisson(alpha_value=1):
     mean = sp.integrate(sp.integrate(u_sp, (x, -1, 1)), (y, -1, 1))
 
     u_sp = u_sp - mean/4
+    grad_u = (u_sp.diff(x, 1), u_sp.diff(y, 1))
+    grad_un = [sign*grad_u[i] for sign, i in ((-1, 0), (1, 0), (-1, 1), (1, 1))]
     # Neumann data on top edge we give -grad(u).n there
     g_neumann = -u_sp.diff(y, 1)
     # For robin -du/dn = alpha*u + g
@@ -26,6 +28,7 @@ def poisson(alpha_value=1):
                                                          alpha=alpha)
     # Wrap as expression for FEniCS
     return {'u_true': as_expr(u_sp),
+            'lm_true': tuple(map(as_expr, grad_un)),
             'g_neumann': as_expr(g_neumann),
             'g_robin': as_expr(g_robin),
             'g_dirichlet': as_expr(u_sp),
