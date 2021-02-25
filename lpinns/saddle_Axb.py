@@ -64,7 +64,7 @@ def closure():
     
     return loss
 
-lr = 1E-1
+lr = 1E-1  # Can this be adjusted dynamically
 for step in range(nsteps):
     print(f'Step {step}')
     # Fix y and minimize over x
